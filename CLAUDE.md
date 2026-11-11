@@ -36,6 +36,10 @@ Same engine for both; only the outcome tiles differ.
   behind it. No black-box numbers.
 - Sample data is fictional and must be labelled "Sample data" in the UI.
 - At the end of every task, open a PR and merge it into main unless told otherwise.
+- The repo is connected to Vercel: main auto-deploys to production and every branch gets a
+  preview link. Give me the live/preview link to check, not localhost steps.
+- Start every task on a new branch from main (e.g. phase-3-verdicts). Never reuse a merged
+  branch; never force-push.
 
 ## Language
 - Say "annual revenue" or "run-rate", never "ARR".
@@ -72,3 +76,9 @@ proprietary fonts or brand assets. Must suit a PE associate.
   title and a source line underneath ("Source: seller data, Kitchen Corp analysis"). Use
   the shared `Exhibit` component.
 - Target rows and cards carry a small cuisine tag, Uber Eats style.
+- **Logo and icons** (`/components/brand`): all original minimal line drawings with round
+  stroke caps. Header: fork and knife side by side plus the "Kitchen Corp" wordmark
+  (`Logo`). App icon (`app/icon.svg`): the same fork and knife in white on a black rounded
+  square, legible at 16px. Status icon (`StatusCutlery`, not the logo), from dining
+  etiquette: crossed fork and knife = in progress / awaiting review; side by side at an
+  angle = complete / signed off. Always rendered with a tooltip.
