@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Logo } from "@/components/brand/Logo";
 
 export const NAV = [
   { href: "/pipeline", label: "Pipeline" },
@@ -16,14 +17,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-white/75 backdrop-blur-md supports-[backdrop-filter]:bg-white/65">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-8 px-6">
-        <Link href="/pipeline" className="flex shrink-0 items-center gap-2.5 text-foreground no-underline">
-          <span
-            aria-hidden
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-foreground text-[12px] font-semibold tracking-tight text-white"
-          >
-            KC
-          </span>
-          <span className="text-[15px] font-semibold tracking-tight">Kitchen Corp</span>
+        <Link href="/pipeline" className="flex shrink-0 items-center text-foreground no-underline" aria-label="Kitchen Corp home">
+          <Logo />
         </Link>
 
         <nav aria-label="Primary" className="flex items-center gap-1">
