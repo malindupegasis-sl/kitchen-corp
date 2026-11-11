@@ -38,6 +38,9 @@ Same engine for both; only the outcome tiles differ.
 - At the end of every task, open a PR and merge it into main unless told otherwise.
 - The repo is connected to Vercel: main auto-deploys to production and every branch gets a
   preview link. Give me the live/preview link to check, not localhost steps.
+- Deploy checks: rely on the local build, screenshot checks and Vercel's status on the PR,
+  then give the link for the deployed page to be checked by a person. The Vercel hosts are
+  behind Vercel Authentication; never add them to a sandbox network allowlist.
 - Start every task on a new branch from main (e.g. phase-3-verdicts). Never reuse a merged
   branch; never force-push.
 

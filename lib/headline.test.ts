@@ -48,3 +48,17 @@ describe("scoredExhibitTitle", () => {
     expect(scoredExhibitTitle([...scores, ...blank], 60)).toMatch(/; 1 has no data to score$/);
   });
 });
+
+describe("verdicts titles", () => {
+  it("state the recommended set and the numbers behind it", async () => {
+    const { runVerdicts } = await import("./engine/verdicts");
+    const { verdictsExhibitTitle, verdictsHeadline, verdictsSubtitle } = await import("./headline");
+    const scores = scoreTargets(acquisitionLens, sampleTargets, sampleAcquirer);
+    const vr = runVerdicts({ targets: sampleTargets, acquirer: sampleAcquirer, scores, passBelow: 60 });
+    expect(verdictsHeadline(vr, sampleTargets, sampleAcquirer)).toMatch(/^Pursue .+ and .+ for £4\.9m of your £5m$/);
+    expect(verdictsSubtitle(vr, sampleAcquirer)).toMatch(/^Adds £[\d.]+[mk] of annual revenue and £[\d.]+[mk] of EBITDA including £[\d.]+[mk] of combination effects, taking you to £[\d.]+m against a £30m target\. \d+ on HOLD, \d+ PASS\.$/);
+    expect(verdictsExhibitTitle(vr)).toMatch(/^\d of 10 candidates above the 60 line make the set; combination effects add £\d+k a year$/);
+    const none = runVerdicts({ targets: sampleTargets, acquirer: { ...sampleAcquirer, capital: 100 }, scores, passBelow: 60 });
+    expect(verdictsHeadline(none, sampleTargets, { ...sampleAcquirer, capital: 100 })).toMatch(/^No combination of the 10 candidates fits/);
+  });
+});

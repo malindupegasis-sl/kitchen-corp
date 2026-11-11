@@ -45,4 +45,25 @@ export const benchmarks = {
 
   /* Acquirer */
   kitchenUtilisation: { lowSlack: 85, highSlack: 55 },
+
+  /* Combination effects (all expressed as annual £ of EBITDA-equivalent value) */
+  combination: {
+    /** Horizon over which integration capacity applies. */
+    horizonYears: 3,
+    /** Cannibalisation: % of the target's EBITDA lost per party with the same cuisine in an overlapping zone. */
+    cannibalisationPct: { acquirerExpand: 25, acquirerDensify: 8, betweenTargets: 10 },
+    cannibalisationMaxParties: 3,
+    /** Zone fit: % of the target's EBITDA added when its zones suit the strategy. */
+    zoneFitPct: 15,
+    /** Central production kitchen: points of revenue saved on food cost for each member of a same-cuisine cluster. */
+    centralKitchenFoodCostPts: 1.5,
+    /** Procurement saving as % of food cost: base for one deal, growing with basket size. */
+    procurement: { basePct: 1, perExtraTargetPct: 0.5, maxPct: 3 },
+    /** Shared head office: % of the target's central overhead removed. */
+    headOfficeSavingPct: 40,
+    /** Delivery uplift for targets under the threshold share: capture % of the gap, at an incremental margin. */
+    deliveryUplift: { thresholdShare: 20, capturePct: 50, incrementalMarginPct: 15 },
+    /** Cuisine breadth: % of the target's EBITDA for a cuisine new to both the acquirer and the rest of the basket. */
+    cuisineBreadthPct: 2,
+  },
 } as const;

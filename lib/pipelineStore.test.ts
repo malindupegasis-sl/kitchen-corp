@@ -114,3 +114,29 @@ describe("weights", () => {
     expect(createPipelineStore(factory).getSnapshot().weights).toBeUndefined();
   });
 });
+
+describe("specialist reviews", () => {
+  beforeEach(() => {
+    vi.stubGlobal("window", {});
+  });
+
+  it("creates, updates, persists and clears reviews", () => {
+    const factory = storageFactory();
+    const store = createPipelineStore(factory);
+    store.setReview("t_smashed", { reviewer: "A. Specialist", notes: "Visited site 2" });
+    store.setReview("t_smashed", { status: "recommended" });
+    const r = store.getSnapshot().reviews!["t_smashed"];
+    expect(r.reviewer).toBe("A. Specialist");
+    expect(r.notes).toBe("Visited site 2");
+    expect(r.status).toBe("recommended");
+    expect(r.concerns).toBe("");
+    expect(createPipelineStore(factory).getSnapshot().reviews!["t_smashed"].status).toBe("recommended");
+    store.updateTarget("t_smashed", { name: "x" }); // unrelated edits keep reviews
+    expect(store.getSnapshot().reviews!["t_smashed"].status).toBe("recommended");
+    store.removeTarget("t_smashed"); // removing the target removes its review
+    expect(store.getSnapshot().reviews!["t_smashed"]).toBeUndefined();
+    store.setReview("t_bao", { status: "reviewed" });
+    store.resetToSample();
+    expect(store.getSnapshot().reviews).toBeUndefined();
+  });
+});

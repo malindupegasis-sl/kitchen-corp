@@ -7,6 +7,7 @@
  * data gaps. Never "fit", "best" or anything that implies a score or verdict.
  */
 import type { TargetScore } from "./engine/types";
+import { joinNames, type VerdictsResult } from "./engine/verdicts";
 import { pipelineFlags } from "./flags";
 import { formatGbpCompact } from "./format";
 import { hasDataGaps } from "./gaps";
@@ -74,4 +75,32 @@ export function scoredExhibitTitle(scores: TargetScore[], passBelow: number): st
         ? `${partial} ${partial === 1 ? "is" : "are"} scored on partial data`
         : "all scored on complete data";
   return `${above} of ${plural(scores.length, "target")} score ${passBelow} or more on the acquisition lens; ${tail}`;
+}
+
+/** Page title for the Verdicts screen: the recommended set, as computed by the combination engine. */
+export function verdictsHeadline(vr: VerdictsResult, targets: Target[], acquirer: AcquirerProfile): string {
+  const byId = new Map(targets.map((t) => [t.id, t]));
+  const names = vr.result.selected.map((id) => byId.get(id)?.name ?? id);
+  if (targets.length === 0) return "No targets to judge yet";
+  if (names.length === 0) {
+    return vr.result.candidates.length === 0
+      ? `No target reaches the ${vr.passBelow} line; nothing to pursue yet`
+      : `No combination of the ${vr.result.candidates.length} candidates fits your ${formatGbpCompact(acquirer.capital)} and capacity`;
+  }
+  return `Pursue ${joinNames(names)} for ${formatGbpCompact(vr.capitalUsed)} of your ${formatGbpCompact(acquirer.capital)}`;
+}
+
+/** One line under the Verdicts title. */
+export function verdictsSubtitle(vr: VerdictsResult, acquirer: AcquirerProfile): string {
+  if (vr.result.selected.length === 0) return `${vr.counts.HOLD} on HOLD, ${vr.counts.PASS} PASS. Change capital, capacity or strategy to see a set.`;
+  const combined = acquirer.revenue + vr.revenueAdded;
+  return `Adds ${formatGbpCompact(vr.revenueAdded)} of annual revenue and ${formatGbpCompact(vr.ebitdaAdded)} of EBITDA including ${formatGbpCompact(vr.result.effectTotal)} of combination effects, taking you to ${formatGbpCompact(combined)} against a ${formatGbpCompact(acquirer.targetRevenue)} target. ${vr.counts.HOLD} on HOLD, ${vr.counts.PASS} PASS.`;
+}
+
+/** Takeaway for the ranked-cards exhibit. */
+export function verdictsExhibitTitle(vr: VerdictsResult): string {
+  const c = vr.result.candidates.length;
+  if (c === 0) return `No target scores ${vr.passBelow} or more, so every verdict is PASS or needs data`;
+  const effects = vr.result.effectTotal;
+  return `${vr.counts.PURSUE} of ${c} candidates above the ${vr.passBelow} line make the set; combination effects ${effects >= 0 ? "add" : "cost"} ${formatGbpCompact(Math.abs(effects))} a year`;
 }

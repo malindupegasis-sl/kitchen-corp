@@ -11,6 +11,7 @@ import {
   loadPipeline,
   savePipeline,
   type PipelineState,
+  type SpecialistReview,
   type StorageLike,
 } from "./storage";
 import {
@@ -72,9 +73,9 @@ export function createPipelineStore(getStorage: () => StorageLike | null = brows
     for (const l of listeners) l();
   }
 
-  function commit(partial: PipelineState) {
-    const next: PipelineState = { ...partial, weights: partial.weights ?? snapshot.weights };
+  function commit(next: PipelineState) {
     if (next.weights === undefined) delete next.weights;
+    if (next.reviews === undefined) delete next.reviews;
     const ok = savePipeline(next, getStorage());
     snapshot = { ...next, hydrated: true, saveStatus: ok ? "saved" : "error" };
     emit();
@@ -82,7 +83,7 @@ export function createPipelineStore(getStorage: () => StorageLike | null = brows
 
   function current(): PipelineState {
     init(); // a mutation before any read must still start from saved data
-    return { acquirer: snapshot.acquirer, targets: snapshot.targets, weights: snapshot.weights };
+    return { acquirer: snapshot.acquirer, targets: snapshot.targets, weights: snapshot.weights, reviews: snapshot.reviews };
   }
 
   return {
@@ -101,15 +102,15 @@ export function createPipelineStore(getStorage: () => StorageLike | null = brows
     },
 
     setAcquirer(patch: Partial<AcquirerProfile>) {
-      const { acquirer, targets } = current();
-      commit({ acquirer: { ...acquirer, ...patch }, targets });
+      const state = current();
+      commit({ ...state, acquirer: { ...state.acquirer, ...patch } });
     },
 
     updateTarget(id: string, patch: Partial<Target>) {
-      const { acquirer, targets } = current();
+      const state = current();
       commit({
-        acquirer,
-        targets: targets.map((t) => {
+        ...state,
+        targets: state.targets.map((t) => {
           if (t.id !== id) return t;
           const next = { ...t, ...patch };
           // Changing type re-applies the default integration load unless the
@@ -124,15 +125,17 @@ export function createPipelineStore(getStorage: () => StorageLike | null = brows
 
     /** Adds a blank target and returns its id. */
     addTarget(): string {
-      const { acquirer, targets } = current();
+      const state = current();
       const id = newId();
-      commit({ acquirer, targets: [...targets, blankTarget(id)] });
+      commit({ ...state, targets: [...state.targets, blankTarget(id)] });
       return id;
     },
 
     removeTarget(id: string) {
-      const { acquirer, targets } = current();
-      commit({ acquirer, targets: targets.filter((t) => t.id !== id) });
+      const state = current();
+      const reviews = { ...(state.reviews ?? {}) };
+      delete reviews[id];
+      commit({ ...state, targets: state.targets.filter((t) => t.id !== id), reviews });
     },
 
     /**
@@ -140,32 +143,46 @@ export function createPipelineStore(getStorage: () => StorageLike | null = brows
      * Replace: the imported rows become the whole pipeline.
      */
     importTargets(incoming: Target[], mode: ImportMode) {
-      const { acquirer, targets } = current();
+      const state = current();
       if (mode === "replace") {
-        commit({ acquirer, targets: incoming });
+        commit({ ...state, targets: incoming, reviews: undefined });
         return;
       }
       const byId = new Map(incoming.map((t) => [t.id, t]));
-      const merged = targets.map((t) => byId.get(t.id) ?? t);
-      const existing = new Set(targets.map((t) => t.id));
+      const merged = state.targets.map((t) => byId.get(t.id) ?? t);
+      const existing = new Set(state.targets.map((t) => t.id));
       for (const t of incoming) if (!existing.has(t.id)) merged.push(t);
-      commit({ acquirer, targets: merged });
+      commit({ ...state, targets: merged });
     },
 
     setWeights(weights: Partial<Weights>) {
-      const { acquirer, targets } = current();
-      commit({ acquirer, targets, weights });
+      commit({ ...current(), weights });
     },
 
     resetWeights() {
-      const { acquirer, targets } = current();
-      const ok = savePipeline({ acquirer, targets }, getStorage());
-      snapshot = { acquirer, targets, hydrated: true, saveStatus: ok ? "saved" : "error" };
-      emit();
+      commit({ ...current(), weights: undefined });
     },
 
+    /** Create or update a specialist review. */
+    setReview(targetId: string, patch: Partial<Omit<SpecialistReview, "targetId" | "updatedAt">>) {
+      const state = current();
+      const existing = state.reviews?.[targetId];
+      const review: SpecialistReview = {
+        targetId,
+        reviewer: "",
+        status: "draft",
+        notes: "",
+        concerns: "",
+        ...existing,
+        ...patch,
+        updatedAt: new Date().toISOString(),
+      };
+      commit({ ...state, reviews: { ...(state.reviews ?? {}), [targetId]: review } });
+    },
+
+    /** Restore the sample acquirer and targets; keeps weights, clears reviews. */
     resetToSample() {
-      commit(sampleState());
+      commit({ ...sampleState(), weights: current().weights });
     },
   };
 }
