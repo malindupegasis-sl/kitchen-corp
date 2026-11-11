@@ -14,16 +14,16 @@ export function Header() {
   const pathname = usePathname();
 
   return (
-    <header className="bg-header text-white">
-      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center gap-8">
-        <Link href="/pipeline" className="flex items-center gap-3 shrink-0">
+    <header className="sticky top-0 z-30 border-b border-line bg-white/75 backdrop-blur-md supports-[backdrop-filter]:bg-white/65">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-8 px-6">
+        <Link href="/pipeline" className="flex shrink-0 items-center gap-2.5 text-foreground no-underline">
           <span
             aria-hidden
-            className="inline-flex h-8 w-8 items-center justify-center rounded bg-white text-header font-semibold tracking-tight"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-foreground text-[12px] font-semibold tracking-tight text-white"
           >
             KC
           </span>
-          <span className="font-semibold tracking-tight">Kitchen Corp</span>
+          <span className="text-[15px] font-semibold tracking-tight">Kitchen Corp</span>
         </Link>
 
         <nav aria-label="Primary" className="flex items-center gap-1">
@@ -35,10 +35,10 @@ export function Header() {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={
-                  "px-3 py-1.5 rounded text-sm transition-colors " +
+                  "rounded-full px-3 py-1 text-sm no-underline transition-colors " +
                   (active
-                    ? "bg-white/10 text-white font-medium"
-                    : "text-white/70 hover:text-white hover:bg-white/5")
+                    ? "bg-foreground text-white"
+                    : "text-muted hover:bg-fill hover:text-foreground")
                 }
               >
                 {label}
@@ -48,7 +48,7 @@ export function Header() {
         </nav>
 
         <span
-          className="ml-auto inline-flex items-center rounded-full border border-white/25 px-2.5 py-0.5 text-xs text-white/80"
+          className="ml-auto inline-flex items-center rounded-full border border-line bg-surface px-2.5 py-0.5 text-xs text-muted"
           title="All figures shown are fictional sample data"
         >
           Sample data
