@@ -35,6 +35,7 @@ Same engine for both; only the outcome tiles differ.
 - Every score, verdict and projection must show plain-English reasons and the assumptions
   behind it. No black-box numbers.
 - Sample data is fictional and must be labelled "Sample data" in the UI.
+- At the end of every task, open a PR and merge it into main unless told otherwise.
 
 ## Language
 - Say "annual revenue" or "run-rate", never "ARR".
