@@ -1,59 +1,42 @@
 /**
  * Action titles: headings that state the conclusion, generated from the data.
  * Pure functions so the wording is testable and consistent across screens.
+ *
+ * Rule: a title may only state what the engine has actually computed at that
+ * stage. Before scoring (Pipeline) that means factual counts: risk flags and
+ * data gaps. Never "fit", "best" or anything that implies a score or verdict.
  */
 import { pipelineFlags } from "./flags";
 import { formatGbpCompact } from "./format";
+import { hasDataGaps } from "./gaps";
 import type { AcquirerProfile, Target } from "./types";
-
-export interface TargetFit {
-  /** Asking price is known and within the acquirer's capital. */
-  withinCapital: boolean;
-  /** Zones suit the strategy: new zones when expanding, shared zones when densifying. */
-  zoneFit: boolean;
-  fits: boolean;
-}
-
-const norm = (z: string) => z.trim().toLowerCase();
-
-export function targetFit(acquirer: AcquirerProfile, target: Target): TargetFit {
-  const withinCapital = target.askingPrice > 0 && target.askingPrice <= acquirer.capital;
-  const acquirerZones = new Set(acquirer.zones.map(norm));
-  const shared = target.zones.some((z) => acquirerZones.has(norm(z)));
-  const opensNew = target.zones.some((z) => !acquirerZones.has(norm(z)));
-  const zoneFit = acquirer.strategy === "densify" ? shared : opensNew;
-  return { withinCapital, zoneFit, fits: withinCapital && zoneFit };
-}
 
 function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
 
-/** Page title for the Pipeline screen. */
-export function pipelineHeadline(acquirer: AcquirerProfile, targets: Target[]): string {
-  if (targets.length === 0) return "Add targets to start building a pipeline";
+/** Page title for the Pipeline screen: risk flags and data gaps only. */
+export function pipelineHeadline(targets: Target[]): string {
+  if (targets.length === 0) return "No targets yet: add one or import a CSV";
   const total = targets.length;
-  const zonesWord = acquirer.strategy === "densify" ? "your zones" : "new zones";
-  if (acquirer.capital <= 0) {
-    const n = targets.filter((t) => targetFit(acquirer, t).zoneFit).length;
-    return `${n} of ${plural(total, "target")} fit ${zonesWord}; add capital to check price`;
-  }
-  const n = targets.filter((t) => targetFit(acquirer, t).fits).length;
-  return `${n} of ${plural(total, "target")} fit your ${formatGbpCompact(acquirer.capital)} and ${zonesWord}`;
+  const flagged = targets.filter((t) => pipelineFlags(t).length > 0).length;
+  const gaps = targets.filter(hasDataGaps).length;
+
+  const flagText =
+    flagged === 0
+      ? `None of ${plural(total, "target")} carries a rent or lease flag`
+      : `${flagged} of ${plural(total, "target")} ${flagged === 1 ? "carries" : "carry"} a rent or lease flag`;
+  const gapText = gaps === 0 ? "none has data gaps" : `${gaps} ${gaps === 1 ? "has" : "have"} data gaps`;
+  return `${flagText}; ${gapText}`;
 }
 
 /** One-line description under the Pipeline title. */
 export function pipelineSubtitle(targets: Target[]): string {
   if (targets.length === 0) return "Add a target, import a CSV, or reset to the sample data. Edits save to this browser.";
-  const flagged = targets.filter((t) => pipelineFlags(t).length > 0).length;
-  const flagText =
-    flagged === 0
-      ? "None carries a rent or lease flag."
-      : `${flagged} ${flagged === 1 ? "carries" : "carry"} a rent or lease flag.`;
-  return `${flagText} Click any cell to edit; edits save to this browser.`;
+  return "Flags and gaps are counted from the data as entered; scores and verdicts come once the acquisition lens runs. Click any cell to edit; edits save to this browser.";
 }
 
-/** Section title for the acquirer profile card. */
+/** Section title for the acquirer profile card: facts from the profile. */
 export function acquirerHeadline(acquirer: AcquirerProfile): string {
   const name = acquirer.name.trim() || "Your business";
   const parts = [
@@ -66,14 +49,11 @@ export function acquirerHeadline(acquirer: AcquirerProfile): string {
   return `${name}: ${parts.join(", ")}`;
 }
 
-/** Takeaway title for the targets exhibit. */
+/** Takeaway title for the targets exhibit: counts and sums only. */
 export function targetsExhibitTitle(acquirer: AcquirerProfile, targets: Target[]): string {
   if (targets.length === 0) return "No targets in the pipeline yet";
-  const total = targets.length;
-  const flagged = targets.filter((t) => pipelineFlags(t).length > 0).length;
-  const within = targets.filter((t) => targetFit(acquirer, t).withinCapital).length;
-  const cap = formatGbpCompact(acquirer.capital);
-  const priced = acquirer.capital > 0 ? `${within} ${within === 1 ? "is" : "are"} priced within your ${cap}` : "set capital to check prices";
-  if (flagged === 0) return `No target carries a rent or lease flag; ${priced}`;
-  return `${flagged} of ${plural(total, "target")} carry a rent or lease flag; ${priced}`;
+  const zones = new Set(targets.flatMap((t) => t.zones.map((z) => z.trim().toLowerCase())).filter(Boolean)).size;
+  const cuisines = new Set(targets.map((t) => t.cuisine.trim().toLowerCase()).filter(Boolean)).size;
+  const asking = targets.reduce((s, t) => s + (t.askingPrice || 0), 0);
+  return `${plural(targets.length, "target")} across ${plural(zones, "zone")} and ${plural(cuisines, "cuisine")}; ${formatGbpCompact(asking)} total asking against ${formatGbpCompact(acquirer.capital)} capital`;
 }

@@ -3,6 +3,7 @@
 import { Fragment } from "react";
 import { CuisineTag, ListInput, NumberInput, SelectInput, TextInput } from "@/components/ui/inputs";
 import { isLeaseFlagged, isRentFlagged, pipelineFlags } from "@/lib/flags";
+import { dataGaps } from "@/lib/gaps";
 import { pipelineStore } from "@/lib/pipelineStore";
 import {
   LOCATION_TYPES,
@@ -23,7 +24,7 @@ const GROUPS: { label: string; cols: string[] }[] = [
   { label: "Aggregators (% of delivery)", cols: ["Uber", "Deliveroo", "Just Eat"] },
   { label: "Quality", cols: ["Rating", "Site min", "Site max", "Covers", "Brand"] },
   { label: "Deal", cols: ["Asking (£)", "Int. load", "Notes"] },
-  { label: "", cols: ["Flags", ""] },
+  { label: "", cols: ["Flags / gaps", ""] },
 ];
 
 const th = "px-2 py-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted whitespace-nowrap";
@@ -86,6 +87,7 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
         <tbody>
           {targets.map((t) => {
             const flags = pipelineFlags(t);
+            const gaps = dataGaps(t);
             const rentFlag = isRentFlagged(t);
             const leaseFlag = isLeaseFlagged(t);
             const amber = "bg-amber-50";
@@ -194,7 +196,7 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
 
                 {/* Flags + actions */}
                 <td className={`${td} whitespace-nowrap`}>
-                  {flags.length === 0 ? (
+                  {flags.length === 0 && gaps.length === 0 ? (
                     <span className="text-xs text-muted">—</span>
                   ) : (
                     <span className="inline-flex gap-1">
@@ -205,6 +207,11 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
                           </span>
                         </Fragment>
                       ))}
+                      {gaps.length > 0 && (
+                        <span title={`Missing: ${gaps.join(", ")}`} className="inline-flex items-center rounded-full bg-fill px-2 py-0.5 text-[11px] font-medium text-muted">
+                          {gaps.length} gap{gaps.length === 1 ? "" : "s"}
+                        </span>
+                      )}
                     </span>
                   )}
                 </td>

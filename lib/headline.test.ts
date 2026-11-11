@@ -1,45 +1,37 @@
 import { describe, expect, it } from "vitest";
 import { sampleAcquirer, sampleTargets } from "@/data/sample";
-import { acquirerHeadline, pipelineHeadline, pipelineSubtitle, targetFit, targetsExhibitTitle } from "./headline";
+import { acquirerHeadline, pipelineHeadline, pipelineSubtitle, targetsExhibitTitle } from "./headline";
 import { blankTarget } from "./types";
 
-describe("targetFit", () => {
-  const smashed = sampleTargets.find((t) => t.id === "t_smashed")!; // Manchester, £4.0m
-  const siam = sampleTargets.find((t) => t.id === "t_siam")!; // Birmingham, £5.2m
-
-  it("checks price against capital and zones against strategy", () => {
-    expect(targetFit(sampleAcquirer, smashed)).toEqual({ withinCapital: true, zoneFit: false, fits: false });
-    expect(targetFit({ ...sampleAcquirer, strategy: "densify" }, smashed)).toEqual({ withinCapital: true, zoneFit: true, fits: true });
-    expect(targetFit(sampleAcquirer, siam)).toEqual({ withinCapital: false, zoneFit: true, fits: false });
+describe("pipelineHeadline", () => {
+  it("counts risk flags and data gaps, nothing else", () => {
+    expect(pipelineHeadline(sampleTargets)).toBe("7 of 20 targets carry a rent or lease flag; none has data gaps");
+    expect(pipelineHeadline([])).toBe("No targets yet: add one or import a CSV");
+    expect(pipelineHeadline([blankTarget("x")])).toBe("None of 1 target carries a rent or lease flag; 1 has data gaps");
+    expect(pipelineHeadline([...sampleTargets, blankTarget("x"), blankTarget("y")])).toBe("7 of 22 targets carry a rent or lease flag; 2 have data gaps");
+    expect(pipelineHeadline([sampleTargets.find((t) => t.id === "t_siam")!])).toBe("1 of 1 target carries a rent or lease flag; none has data gaps");
   });
 
-  it("treats a zero asking price as not priced", () => {
-    expect(targetFit(sampleAcquirer, blankTarget("x")).withinCapital).toBe(false);
+  it("never claims fit or scores before the engine has run", () => {
+    const titles = [pipelineHeadline(sampleTargets), targetsExhibitTitle(sampleAcquirer, sampleTargets), acquirerHeadline(sampleAcquirer)];
+    for (const t of titles) expect(t).not.toMatch(/\b(fit|fits|best|score|verdict|pursue|hold|pass)\b/i);
   });
 });
 
-describe("headlines", () => {
-  it("states the pipeline conclusion from the data", () => {
-    expect(pipelineHeadline(sampleAcquirer, sampleTargets)).toBe("15 of 20 targets fit your £5m and new zones");
-    expect(pipelineHeadline({ ...sampleAcquirer, strategy: "densify" }, sampleTargets)).toBe("8 of 20 targets fit your £5m and your zones");
-    expect(pipelineHeadline(sampleAcquirer, [])).toBe("Add targets to start building a pipeline");
-    expect(pipelineHeadline({ ...sampleAcquirer, capital: 0 }, sampleTargets)).toBe("16 of 20 targets fit new zones; add capital to check price");
+describe("other titles", () => {
+  it("writes the subtitle", () => {
+    expect(pipelineSubtitle([])).toMatch(/^Add a target/);
+    expect(pipelineSubtitle(sampleTargets)).toMatch(/^Flags and gaps are counted/);
   });
 
-  it("describes flags in the subtitle", () => {
-    expect(pipelineSubtitle(sampleTargets)).toBe("7 carry a rent or lease flag. Click any cell to edit; edits save to this browser.");
-    expect(pipelineSubtitle([blankTarget("x")])).toMatch(/^None carries/);
-  });
-
-  it("summarises the acquirer", () => {
+  it("summarises the acquirer from its profile", () => {
     expect(acquirerHeadline(sampleAcquirer)).toBe("Northside Burger Co: 12 sites, £18m annual revenue, £5m to deploy");
     expect(acquirerHeadline({ ...sampleAcquirer, mode: "pe" })).toBe("Northside Burger Co: 12 sites, £18m annual revenue, £5m equity over 5 years");
     expect(acquirerHeadline({ ...sampleAcquirer, name: " " })).toMatch(/^Your business:/);
   });
 
-  it("writes the targets exhibit takeaway", () => {
-    expect(targetsExhibitTitle(sampleAcquirer, sampleTargets)).toBe("7 of 20 targets carry a rent or lease flag; 19 are priced within your £5m");
+  it("writes the targets exhibit takeaway from counts and sums", () => {
+    expect(targetsExhibitTitle(sampleAcquirer, sampleTargets)).toBe("20 targets across 17 zones and 17 cuisines; £48m total asking against £5m capital");
     expect(targetsExhibitTitle(sampleAcquirer, [])).toBe("No targets in the pipeline yet");
-    expect(targetsExhibitTitle(sampleAcquirer, [{ ...blankTarget("x"), askingPrice: 1 }])).toBe("No target carries a rent or lease flag; 1 is priced within your £5m");
   });
 });
