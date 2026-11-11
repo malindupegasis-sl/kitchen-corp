@@ -3,11 +3,26 @@ import type { AcquirerProfile, Target } from "./types";
 
 export const STORAGE_KEY = "kitchen-corp:pipeline:v1";
 
+export type ReviewStatus = "draft" | "reviewed" | "recommended";
+
+/** A Kitchen Corp specialist's review of one target. */
+export interface SpecialistReview {
+  targetId: string;
+  reviewer: string;
+  status: ReviewStatus;
+  notes: string;
+  /** Concerns not in the data. */
+  concerns: string;
+  updatedAt: string;
+}
+
 export interface PipelineState {
   acquirer: AcquirerProfile;
   targets: Target[];
   /** Scoring weights for the acquisition lens; absent means the lens defaults. */
   weights?: Partial<Weights>;
+  /** Specialist reviews by target id. */
+  reviews?: Record<string, SpecialistReview>;
 }
 
 /** The subset of the Storage interface we use, so tests can pass a fake. */
