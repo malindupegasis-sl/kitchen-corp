@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { pipelineFlags } from "@/lib/flags";
+import { dataGaps } from "@/lib/gaps";
 import { sampleAcquirer, sampleTargets } from "./sample";
 
 describe("sample data", () => {
@@ -18,12 +19,26 @@ describe("sample data", () => {
     expect(sampleTargets).toHaveLength(20);
     expect(new Set(sampleTargets.map((t) => t.id)).size).toBe(20);
     for (const t of sampleTargets) {
-      const c = t.channelMix!;
-      expect(c.dineIn + c.delivery + c.takeaway, t.name).toBe(100);
-      const a = t.aggregatorSplit!;
-      expect(a.uber + a.deliveroo + a.justEat, t.name).toBe(100);
-      expect(t.siteRatingMin!).toBeLessThanOrEqual(t.siteRatingMax!);
+      if (t.channelMix) expect(t.channelMix.dineIn + t.channelMix.delivery + t.channelMix.takeaway, t.name).toBe(100);
+      if (t.aggregatorSplit) expect(t.aggregatorSplit.uber + t.aggregatorSplit.deliveroo + t.aggregatorSplit.justEat, t.name).toBe(100);
+      if (t.siteRatingMin !== undefined && t.siteRatingMax !== undefined) expect(t.siteRatingMin).toBeLessThanOrEqual(t.siteRatingMax);
     }
+  });
+
+  it("has exactly 3 targets with realistic missing fields", () => {
+    const withGaps = sampleTargets.filter((t) => dataGaps(t).length > 0);
+    expect(withGaps.map((t) => t.name).sort()).toEqual(["Northern Fry Co", "Olive & Thyme", "Tandoor Lane"]);
+    expect(dataGaps(withGaps.find((t) => t.name === "Tandoor Lane")!)).toEqual(["food cost", "labour cost"]);
+    expect(dataGaps(withGaps.find((t) => t.name === "Olive & Thyme")!)).toEqual(["lease length", "overhead cost"]);
+    expect(dataGaps(withGaps.find((t) => t.name === "Northern Fry Co")!)).toEqual(["aggregator split", "site rating range"]);
+  });
+
+  it("has at least 2 same-cuisine clusters of 2-3 targets outside the acquirer's cuisines", () => {
+    const counts = new Map<string, number>();
+    for (const t of sampleTargets) counts.set(t.cuisine, (counts.get(t.cuisine) ?? 0) + 1);
+    const clusters = [...counts.entries()].filter(([c, n]) => !sampleAcquirer.cuisines.includes(c) && n >= 2 && n <= 3);
+    expect(clusters.length).toBeGreaterThanOrEqual(2);
+    expect(Object.fromEntries(clusters)).toEqual({ pizza: 3, japanese: 2 });
   });
 
   it("includes the deliberate overlaps and risk cases", () => {

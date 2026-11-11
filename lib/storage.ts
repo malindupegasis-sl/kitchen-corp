@@ -1,3 +1,4 @@
+import type { Weights } from "./engine/types";
 import type { AcquirerProfile, Target } from "./types";
 
 export const STORAGE_KEY = "kitchen-corp:pipeline:v1";
@@ -5,6 +6,8 @@ export const STORAGE_KEY = "kitchen-corp:pipeline:v1";
 export interface PipelineState {
   acquirer: AcquirerProfile;
   targets: Target[];
+  /** Scoring weights for the acquisition lens; absent means the lens defaults. */
+  weights?: Partial<Weights>;
 }
 
 /** The subset of the Storage interface we use, so tests can pass a fake. */

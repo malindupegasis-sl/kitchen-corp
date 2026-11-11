@@ -26,7 +26,12 @@ export const sampleAcquirer: AcquirerProfile = {
  *  - burgers in Manchester (Smashed MCR) overlaps the acquirer on cuisine AND zone
  *  - burgers in Leeds/Sheffield (Bun & Patty) overlaps on cuisine only
  *  - several targets share Manchester/Liverpool zones with other cuisines
- *  - two pizza groups in different regions
+ *  - same-cuisine clusters outside the acquirer's cuisines, for Phase 3 synergies:
+ *    pizza x3 (Dough Brothers, Pizza Loco, Nonna's Pizzeria) and japanese x2
+ *    (Umami Ramen, Sushi Sora)
+ *  - realistic missing fields on 3 targets: Tandoor Lane (no food / labour cost
+ *    split), Olive & Thyme (no lease length, no overhead), Northern Fry Co (no
+ *    aggregator split, no site-level ratings)
  *  - short leases (<2 yrs): Tandoor Lane, Grill House Burgers, Beirut Nights
  *  - rent >12% of revenue: Siam Kitchen, Casa Verde Tacos, Grill House Burgers,
  *    Seoul Food, Pizza Loco
@@ -160,8 +165,7 @@ export const sampleTargets: Target[] = [
     growthPct: 9,
     lflGrowthPct: 9,
     ebitdaMarginPct: 16,
-    foodCostPct: 28,
-    labourCostPct: 27,
+    // Owner's accounts do not split food and labour: deliberately missing
     rentPctRevenue: 7,
     leaseYearsRemaining: 1.5,
     hasBreakClause: false,
@@ -176,7 +180,7 @@ export const sampleTargets: Target[] = [
     integrationLoad: 1,
     askingPrice: 800_000,
     brandScore: 3,
-    notes: "Lease renewal due next year; landlord signalling a rent rise.",
+    notes: "Lease renewal due next year; landlord signalling a rent rise. Accounts do not split food and labour cost.",
   },
   {
     id: "t_casaverde",
@@ -253,17 +257,15 @@ export const sampleTargets: Target[] = [
     leaseYearsRemaining: 12,
     hasBreakClause: false,
     channelMix: { dineIn: 40, delivery: 10, takeaway: 50 },
-    aggregatorSplit: { uber: 20, deliveroo: 20, justEat: 60 },
+    // No aggregator split or site-level reviews provided: deliberately missing
     rating: 4.2,
-    siteRatingMin: 4.0,
-    siteRatingMax: 4.4,
     covers: 45,
     locationType: "high_street",
     overheadCost: 260_000,
     integrationLoad: 3,
     askingPrice: 3_500_000,
     brandScore: 2,
-    notes: "Mature, cash-generative, barely on delivery.",
+    notes: "Mature, cash-generative, barely on delivery. No aggregator split or site-level reviews provided.",
   },
   {
     id: "t_grillhouse",
@@ -337,7 +339,7 @@ export const sampleTargets: Target[] = [
     foodCostPct: 29,
     labourCostPct: 30,
     rentPctRevenue: 9,
-    leaseYearsRemaining: 2.5,
+    // Lease length not disclosed: deliberately missing
     hasBreakClause: false,
     channelMix: { dineIn: 75, delivery: 15, takeaway: 10 },
     aggregatorSplit: { uber: 30, deliveroo: 60, justEat: 10 },
@@ -346,11 +348,11 @@ export const sampleTargets: Target[] = [
     siteRatingMax: 4.5,
     covers: 60,
     locationType: "high_street",
-    overheadCost: 45_000,
+    // Central overhead not provided: deliberately missing
     integrationLoad: 1,
     askingPrice: 1_000_000,
     brandScore: 3,
-    notes: "Owner wants to stay on as GM.",
+    notes: "Owner wants to stay on as GM. Lease length and overheads not yet disclosed.",
   },
   {
     id: "t_pho",
@@ -559,7 +561,7 @@ export const sampleTargets: Target[] = [
     id: "t_sushisora",
     name: "Sushi Sora",
     type: "restaurant_group",
-    cuisine: "sushi",
+    cuisine: "japanese",
     sites: 3,
     zones: ["Manchester", "Liverpool"],
     revenue: 2_600_000,
@@ -582,13 +584,13 @@ export const sampleTargets: Target[] = [
     integrationLoad: 3,
     askingPrice: 2_500_000,
     brandScore: 3,
-    notes: "Station sites; high food cost from fish pricing.",
+    notes: "Station sites; high food cost from fish pricing. Second Japanese business alongside Umami Ramen.",
   },
   {
     id: "t_nonna",
-    name: "Trattoria Nonna",
+    name: "Nonna's Pizzeria",
     type: "single_site",
-    cuisine: "italian",
+    cuisine: "pizza",
     sites: 1,
     zones: ["York"],
     revenue: 1_200_000,
@@ -611,6 +613,6 @@ export const sampleTargets: Target[] = [
     integrationLoad: 1,
     askingPrice: 1_100_000,
     brandScore: 3,
-    notes: "Long lease, loyal trade, almost no delivery.",
+    notes: "Third pizza business in the pipeline. Long lease, loyal trade, almost no delivery.",
   },
 ];

@@ -6,6 +6,7 @@
  * stage. Before scoring (Pipeline) that means factual counts: risk flags and
  * data gaps. Never "fit", "best" or anything that implies a score or verdict.
  */
+import type { TargetScore } from "./engine/types";
 import { pipelineFlags } from "./flags";
 import { formatGbpCompact } from "./format";
 import { hasDataGaps } from "./gaps";
@@ -56,4 +57,21 @@ export function targetsExhibitTitle(acquirer: AcquirerProfile, targets: Target[]
   const cuisines = new Set(targets.map((t) => t.cuisine.trim().toLowerCase()).filter(Boolean)).size;
   const asking = targets.reduce((s, t) => s + (t.askingPrice || 0), 0);
   return `${plural(targets.length, "target")} across ${plural(zones, "zone")} and ${plural(cuisines, "cuisine")}; ${formatGbpCompact(asking)} total asking against ${formatGbpCompact(acquirer.capital)} capital`;
+}
+
+/** Takeaway title for the targets exhibit once the acquisition lens has run. */
+export function scoredExhibitTitle(scores: TargetScore[], passBelow: number): string {
+  if (scores.length === 0) return "No targets in the pipeline yet";
+  const scored = scores.filter((s) => s.score !== null);
+  if (scored.length === 0) return `${plural(scores.length, "target")} but no data to score yet`;
+  const above = scored.filter((s) => (s.score as number) >= passBelow).length;
+  const partial = scored.filter((s) => s.completeness < 100).length;
+  const unscored = scores.length - scored.length;
+  const tail =
+    unscored > 0
+      ? `${unscored} ${unscored === 1 ? "has" : "have"} no data to score`
+      : partial > 0
+        ? `${partial} ${partial === 1 ? "is" : "are"} scored on partial data`
+        : "all scored on complete data";
+  return `${above} of ${plural(scores.length, "target")} score ${passBelow} or more on the acquisition lens; ${tail}`;
 }
