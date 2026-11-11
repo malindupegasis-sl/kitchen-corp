@@ -27,7 +27,7 @@ export function PipelineScreen() {
     <div className="space-y-8">
       <PageHeading
         label="Pipeline"
-        title={hydrated ? pipelineHeadline(acquirer, targets) : "Loading your saved pipeline"}
+        title={hydrated ? pipelineHeadline(targets) : "Loading your saved pipeline"}
         description={hydrated ? pipelineSubtitle(targets) : undefined}
         actions={
           <>
@@ -57,7 +57,7 @@ export function PipelineScreen() {
           <Exhibit
             number={1}
             title={targetsExhibitTitle(acquirer, targets)}
-            note="Amber marks rent above 12% of revenue or a lease with under 2 years left. Click any cell to edit; it saves when you leave the cell."
+            note="Amber marks rent above 12% of revenue or a lease with under 2 years left; a grey pill lists missing fields. Click any cell to edit; it saves when you leave the cell."
             actions={
               <>
                 <span className="mr-2 text-xs text-muted">

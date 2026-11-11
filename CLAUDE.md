@@ -35,6 +35,7 @@ Same engine for both; only the outcome tiles differ.
 - Every score, verdict and projection must show plain-English reasons and the assumptions
   behind it. No black-box numbers.
 - Sample data is fictional and must be labelled "Sample data" in the UI.
+- At the end of every task, open a PR and merge it into main unless told otherwise.
 
 ## Language
 - Say "annual revenue" or "run-rate", never "ARR".
@@ -58,8 +59,14 @@ proprietary fonts or brand assets. Must suit a PE associate.
   light frosted (backdrop blur) white background. Works on a laptop without horizontal
   scroll; wide tables scroll in their own box.
 - **Headings are action titles** that state the conclusion, generated from the data, with a
-  small plain label above (e.g. label "Pipeline", title "6 of 20 targets fit your £5m and
-  your zones"). Title logic lives in `/lib/headline.ts` as pure functions with tests.
+  small plain label above (e.g. label "Pipeline", title "7 of 20 targets carry a rent or
+  lease flag; 3 have data gaps"). Title logic lives in `/lib/headline.ts` as pure functions
+  with tests.
+- **Action-title rule**: a title may only state what the engine has actually computed at
+  that stage. Before scoring (Pipeline), use factual counts such as risk flags and data
+  gaps, never "fit", "best" or anything that implies a score or verdict. Once the
+  acquisition lens has run (Verdicts onwards), titles may state scores, verdicts and the
+  recommended set.
 - **Exhibits**: charts and key tables are framed as "Exhibit N" with a one-line takeaway
   title and a source line underneath ("Source: seller data, Kitchen Corp analysis"). Use
   the shared `Exhibit` component.
