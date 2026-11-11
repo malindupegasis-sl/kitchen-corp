@@ -4,8 +4,9 @@ import { dataGaps, hasDataGaps } from "./gaps";
 import { blankTarget } from "./types";
 
 describe("dataGaps", () => {
-  it("finds no gaps in the sample data", () => {
-    for (const t of sampleTargets) expect(dataGaps(t), t.name).toEqual([]);
+  it("finds gaps only in the three deliberately incomplete sample targets", () => {
+    const names = sampleTargets.filter((t) => dataGaps(t).length > 0).map((t) => t.name).sort();
+    expect(names).toEqual(["Northern Fry Co", "Olive & Thyme", "Tandoor Lane"]);
   });
 
   it("lists every missing field for a blank target", () => {
@@ -19,6 +20,6 @@ describe("dataGaps", () => {
 
   it("treats a partially filled target as having gaps", () => {
     const t = { ...sampleTargets[0], rating: undefined, channelMix: undefined };
-    expect(dataGaps(t)).toEqual(["channel mix", "rating"]);
+    expect(dataGaps(t)).toEqual(["channel mix", "customer rating"]);
   });
 });

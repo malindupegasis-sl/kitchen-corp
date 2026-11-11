@@ -5,6 +5,7 @@
  */
 import { useSyncExternalStore } from "react";
 import { sampleAcquirer, sampleTargets } from "@/data/sample";
+import type { Weights } from "./engine/types";
 import { newId } from "./ids";
 import {
   loadPipeline,
@@ -71,7 +72,9 @@ export function createPipelineStore(getStorage: () => StorageLike | null = brows
     for (const l of listeners) l();
   }
 
-  function commit(next: PipelineState) {
+  function commit(partial: PipelineState) {
+    const next: PipelineState = { ...partial, weights: partial.weights ?? snapshot.weights };
+    if (next.weights === undefined) delete next.weights;
     const ok = savePipeline(next, getStorage());
     snapshot = { ...next, hydrated: true, saveStatus: ok ? "saved" : "error" };
     emit();
@@ -79,7 +82,7 @@ export function createPipelineStore(getStorage: () => StorageLike | null = brows
 
   function current(): PipelineState {
     init(); // a mutation before any read must still start from saved data
-    return { acquirer: snapshot.acquirer, targets: snapshot.targets };
+    return { acquirer: snapshot.acquirer, targets: snapshot.targets, weights: snapshot.weights };
   }
 
   return {
@@ -147,6 +150,18 @@ export function createPipelineStore(getStorage: () => StorageLike | null = brows
       const existing = new Set(targets.map((t) => t.id));
       for (const t of incoming) if (!existing.has(t.id)) merged.push(t);
       commit({ acquirer, targets: merged });
+    },
+
+    setWeights(weights: Partial<Weights>) {
+      const { acquirer, targets } = current();
+      commit({ acquirer, targets, weights });
+    },
+
+    resetWeights() {
+      const { acquirer, targets } = current();
+      const ok = savePipeline({ acquirer, targets }, getStorage());
+      snapshot = { acquirer, targets, hydrated: true, saveStatus: ok ? "saved" : "error" };
+      emit();
     },
 
     resetToSample() {

@@ -63,10 +63,11 @@ proprietary fonts or brand assets. Must suit a PE associate.
   lease flag; 3 have data gaps"). Title logic lives in `/lib/headline.ts` as pure functions
   with tests.
 - **Action-title rule**: a title may only state what the engine has actually computed at
-  that stage. Before scoring (Pipeline), use factual counts such as risk flags and data
-  gaps, never "fit", "best" or anything that implies a score or verdict. Once the
-  acquisition lens has run (Verdicts onwards), titles may state scores, verdicts and the
-  recommended set.
+  that stage. Before scoring, use factual counts such as risk flags and data gaps, never
+  "fit", "best" or anything that implies a score or verdict. Once the acquisition lens has
+  run, a title may state standalone scores (the Pipeline targets exhibit does); verdicts
+  and the recommended set appear only once the combination engine has run (Verdicts
+  onwards). The Pipeline page title itself stays factual (flags and gaps).
 - **Exhibits**: charts and key tables are framed as "Exhibit N" with a one-line takeaway
   title and a source line underneath ("Source: seller data, Kitchen Corp analysis"). Use
   the shared `Exhibit` component.

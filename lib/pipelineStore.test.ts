@@ -96,3 +96,21 @@ describe("pipelineStore", () => {
     expect(store.getSnapshot().saveStatus).toBe("error");
   });
 });
+
+describe("weights", () => {
+  beforeEach(() => {
+    vi.stubGlobal("window", {});
+  });
+
+  it("persists weights across edits and reloads, and resets them", () => {
+    const factory = storageFactory();
+    const store = createPipelineStore(factory);
+    store.setWeights({ financial: 40, unitEconomics: 20, lease: 15, delivery: 15, price: 5, brand: 5 });
+    store.updateTarget("t_smashed", { name: "x" }); // an unrelated edit must keep the weights
+    expect(store.getSnapshot().weights?.financial).toBe(40);
+    expect(createPipelineStore(factory).getSnapshot().weights?.financial).toBe(40);
+    store.resetWeights();
+    expect(store.getSnapshot().weights).toBeUndefined();
+    expect(createPipelineStore(factory).getSnapshot().weights).toBeUndefined();
+  });
+});

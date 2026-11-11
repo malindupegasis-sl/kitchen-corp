@@ -1,19 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PageHeading } from "@/components/PageShell";
 import { Exhibit } from "@/components/ui/Exhibit";
 import { Button } from "@/components/ui/inputs";
 import { formatGbpCompact } from "@/lib/format";
-import { pipelineHeadline, pipelineSubtitle, targetsExhibitTitle } from "@/lib/headline";
+import { acquisitionLens, scoreMap, scoreTargets } from "@/lib/engine";
+import { pipelineHeadline, pipelineSubtitle, scoredExhibitTitle } from "@/lib/headline";
 import { pipelineStore, usePipeline } from "@/lib/pipelineStore";
 import { AcquirerForm } from "./AcquirerForm";
 import { CsvImportPanel, downloadTemplate, exportTargets } from "./CsvPanel";
 import { TargetsTable } from "./TargetsTable";
+import { WeightsPanel } from "./WeightsPanel";
 
 export function PipelineScreen() {
-  const { acquirer, targets, hydrated, saveStatus } = usePipeline();
+  const { acquirer, targets, weights, hydrated, saveStatus } = usePipeline();
   const [showImport, setShowImport] = useState(false);
+  const scores = useMemo(() => scoreTargets(acquisitionLens, targets, acquirer, weights), [targets, acquirer, weights]);
+  const scoresById = useMemo(() => scoreMap(scores), [scores]);
 
   const reset = () => {
     if (!window.confirm("Replace the current acquirer and targets with the sample data? This cannot be undone.")) return;
@@ -54,10 +58,12 @@ export function PipelineScreen() {
 
           <AcquirerForm acquirer={acquirer} />
 
+          <WeightsPanel weights={weights} />
+
           <Exhibit
             number={1}
-            title={targetsExhibitTitle(acquirer, targets)}
-            note="Amber marks rent above 12% of revenue or a lease with under 2 years left; a grey pill lists missing fields. Click any cell to edit; it saves when you leave the cell."
+            title={scoredExhibitTitle(scores, acquisitionLens.verdictRules.passBelow)}
+            note="Standalone score 0-100 from the acquisition lens; click a score to see every component, question and assumption behind it. Data is the share of the lens's 16 fields present; missing fields are left out of the score, never counted as zero. Amber marks rent above 12% of revenue or a lease with under 2 years left. Click any cell to edit."
             actions={
               <>
                 <span className="mr-2 text-xs text-muted">
@@ -73,7 +79,7 @@ export function PipelineScreen() {
               </>
             }
           >
-            <TargetsTable targets={targets} />
+            <TargetsTable targets={targets} scores={scoresById} />
           </Exhibit>
 
           <p className="text-xs text-muted" role="status">

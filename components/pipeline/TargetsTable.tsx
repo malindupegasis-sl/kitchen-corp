@@ -1,10 +1,12 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { CuisineTag, ListInput, NumberInput, SelectInput, TextInput } from "@/components/ui/inputs";
+import type { TargetScore } from "@/lib/engine";
 import { isLeaseFlagged, isRentFlagged, pipelineFlags } from "@/lib/flags";
 import { dataGaps } from "@/lib/gaps";
 import { pipelineStore } from "@/lib/pipelineStore";
+import { ScoreDetails } from "./ScoreDetails";
 import {
   LOCATION_TYPES,
   LOCATION_TYPE_LABELS,
@@ -16,7 +18,9 @@ import {
 } from "@/lib/types";
 
 const GROUPS: { label: string; cols: string[] }[] = [
-  { label: "Target", cols: ["Name", "Type", "Cuisine", "Sites", "Zones", "Location"] },
+  { label: "Target", cols: ["Name"] },
+  { label: "Acquisition lens", cols: ["Score", "Data", "Why"] },
+  { label: "", cols: ["Type", "Cuisine", "Sites", "Zones", "Location"] },
   { label: "Financials (£, %)", cols: ["Revenue", "Growth", "LFL", "EBITDA mgn", "Overhead"] },
   { label: "Unit economics (%)", cols: ["Food", "Labour"] },
   { label: "Lease", cols: ["Rent %", "Yrs left", "Break"] },
@@ -31,8 +35,18 @@ const th = "px-2 py-2 text-left text-[11px] font-medium uppercase tracking-wider
 const td = "px-1 py-1 align-middle";
 const sep = "border-l border-line";
 
-export function TargetsTable({ targets }: { targets: Target[] }) {
+const COLUMN_COUNT = GROUPS.reduce((n, g) => n + g.cols.length, 0);
+
+export function TargetsTable({ targets, scores }: { targets: Target[]; scores: Map<string, TargetScore> }) {
   const update = pipelineStore.updateTarget;
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const toggle = (id: string) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const remove = (t: Target) => {
     if (t.name && !window.confirm(`Remove "${t.name}" from the pipeline?`)) return;
@@ -88,11 +102,14 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
           {targets.map((t) => {
             const flags = pipelineFlags(t);
             const gaps = dataGaps(t);
+            const sc = scores.get(t.id);
+            const isOpen = open.has(t.id);
             const rentFlag = isRentFlagged(t);
             const leaseFlag = isLeaseFlagged(t);
             const amber = "bg-amber-50";
             return (
-              <tr key={t.id} className="border-b border-line last:border-b-0 hover:bg-fill/60">
+              <Fragment key={t.id}>
+              <tr className={`border-b border-line hover:bg-fill/60 ${isOpen ? "bg-fill/40" : ""}`}>
                 {/* Target */}
                 <td className={`${td} sticky left-0 z-10 bg-surface pl-2`}>
                   <div className="flex items-center gap-2">
@@ -100,6 +117,38 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
                     <CuisineTag cuisine={t.cuisine} />
                   </div>
                 </td>
+
+                {/* Acquisition lens */}
+                <td className={`${td} ${sep} text-right`}>
+                  <button
+                    type="button"
+                    onClick={() => toggle(t.id)}
+                    aria-expanded={isOpen}
+                    aria-label={`${isOpen ? "Hide" : "Show"} score details for ${t.name || "target"}`}
+                    title="Show how this score was built"
+                    className="group inline-flex w-16 flex-col items-end rounded-md px-1.5 py-0.5 hover:bg-fill"
+                  >
+                    <span className="num text-lg font-medium leading-none">{sc?.score ?? "—"}</span>
+                    <span className="mt-1 h-0.5 w-full rounded-full bg-fill">
+                      {sc?.score != null && <span className="block h-0.5 rounded-full bg-accent" style={{ width: `${sc.score}%` }} />}
+                    </span>
+                  </button>
+                </td>
+                <td className={`${td} text-right`} title={sc && sc.missingFields.length ? `Missing: ${sc.missingFields.join(", ")}` : "All fields present"}>
+                  <span className={`num text-xs ${sc && sc.completeness < 100 ? "text-foreground" : "text-muted"}`}>{sc ? `${sc.completeness}%` : "—"}</span>
+                </td>
+                <td className={`${td} ${sep.replace("border-l", "border-r")}`}>
+                  <ul className="w-80 space-y-0.5 text-[12px] leading-snug">
+                    {(sc?.reasons ?? []).map((r, i) => (
+                      <li key={i} className="flex gap-1.5">
+                        <span className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${r.direction === "positive" ? "bg-foreground" : "border border-foreground"}`} aria-hidden />
+                        <span className={r.direction === "positive" ? "" : "text-foreground/80"}>{r.text}</span>
+                      </li>
+                    ))}
+                    {sc && sc.reasons.length === 0 && <li className="text-muted">No data to score</li>}
+                  </ul>
+                </td>
+
                 <td className={td}>
                   <SelectInput variant="cell" className="w-36" value={t.type} options={TARGET_TYPES} labels={TARGET_TYPE_LABELS} aria-label="Type" onChange={(type) => update(t.id, { type })} />
                 </td>
@@ -221,6 +270,17 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
                   </button>
                 </td>
               </tr>
+              {isOpen && sc && (
+                <tr className="border-b border-line bg-background/60">
+                  <td className="sticky left-0 z-10 bg-background/60 pl-3 align-top pt-4 text-xs font-medium uppercase tracking-[0.14em] text-muted">
+                    {t.name || "Target"}
+                  </td>
+                  <td colSpan={COLUMN_COUNT - 1} className="pl-2">
+                    <ScoreDetails score={sc} />
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             );
           })}
         </tbody>
