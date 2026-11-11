@@ -42,7 +42,25 @@ Same engine for both; only the outcome tiles differ.
 - UK spelling and GBP (£).
 
 ## Design
-Serious, clean, suitable for a PE associate. Dark header, off-white background, one navy
-accent, semantic green/amber/red only for verdicts and risk flags. Numbers in a monospace,
-tabular font. Must work on a laptop without horizontal scroll; wide tables scroll in their
-own box.
+Direction: a blend of Apple (restraint, whitespace), McKinsey (editorial authority) and
+Uber Eats (high-contrast, bold, card-based). Borrow principles only: no logos, no
+proprietary fonts or brand assets. Must suit a PE associate.
+
+- **Type**: serif display for page and section headings (Newsreader from Google Fonts, via
+  `--font-display`); body in system-ui (the native system font); numbers in a tabular
+  monospace (`.num`). Large, confident headline sizes; generous line height.
+- **Colour**: white and near-black base, off-white page background. Primary buttons are
+  black pills with white text. One deep-blue accent (`accent`) for links, focus and chart
+  lines. Green / amber / red are reserved ONLY for PURSUE / HOLD / PASS and risk flags;
+  never for buttons, success messages or validation errors.
+- **Layout**: lots of whitespace, few borders, 12-16px rounded cards (`rounded-xl` /
+  `rounded-2xl`), soft shadows only where something needs to lift. Sticky header with a
+  light frosted (backdrop blur) white background. Works on a laptop without horizontal
+  scroll; wide tables scroll in their own box.
+- **Headings are action titles** that state the conclusion, generated from the data, with a
+  small plain label above (e.g. label "Pipeline", title "6 of 20 targets fit your £5m and
+  your zones"). Title logic lives in `/lib/headline.ts` as pure functions with tests.
+- **Exhibits**: charts and key tables are framed as "Exhibit N" with a one-line takeaway
+  title and a source line underneath ("Source: seller data, Kitchen Corp analysis"). Use
+  the shared `Exhibit` component.
+- Target rows and cards carry a small cuisine tag, Uber Eats style.

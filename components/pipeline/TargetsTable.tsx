@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
-import { ListInput, NumberInput, SelectInput, TextInput } from "@/components/ui/inputs";
+import { CuisineTag, ListInput, NumberInput, SelectInput, TextInput } from "@/components/ui/inputs";
 import { isLeaseFlagged, isRentFlagged, pipelineFlags } from "@/lib/flags";
 import { pipelineStore } from "@/lib/pipelineStore";
 import {
@@ -26,8 +26,9 @@ const GROUPS: { label: string; cols: string[] }[] = [
   { label: "", cols: ["Flags", ""] },
 ];
 
-const th = "px-2 py-1.5 text-left text-[11px] font-medium text-muted whitespace-nowrap";
-const td = "px-1 py-0.5 align-middle";
+const th = "px-2 py-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted whitespace-nowrap";
+const td = "px-1 py-1 align-middle";
+const sep = "border-l border-line";
 
 export function TargetsTable({ targets }: { targets: Target[] }) {
   const update = pipelineStore.updateTarget;
@@ -48,22 +49,22 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
 
   if (targets.length === 0) {
     return (
-      <div className="rounded border border-dashed border-border p-8 text-center text-sm text-muted">
+      <div className="rounded-xl border border-dashed border-line p-10 text-center text-sm text-muted">
         No targets yet. Add one, import a CSV, or reset to the sample data.
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded border border-border">
+    <div className="overflow-x-auto rounded-xl">
       <table className="min-w-max border-collapse text-sm">
-        <thead className="bg-background">
+        <thead>
           <tr>
             {GROUPS.map((g, i) => (
               <th
                 key={i}
                 colSpan={g.cols.length}
-                className={`${th} border-b border-border ${i > 0 ? "border-l" : ""} ${i === 0 ? "sticky left-0 z-20 bg-background" : ""}`}
+                className={`${th} border-b border-line ${i > 0 ? sep : ""} ${i === 0 ? "sticky left-0 z-20 bg-surface" : ""}`}
               >
                 {g.label}
               </th>
@@ -74,7 +75,7 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
               g.cols.map((c, ci) => (
                 <th
                   key={`${gi}-${ci}`}
-                  className={`${th} border-b border-border ${ci === 0 && gi > 0 ? "border-l" : ""} ${gi === 0 && ci === 0 ? "sticky left-0 z-20 bg-background" : ""}`}
+                  className={`${th} border-b border-line ${ci === 0 && gi > 0 ? sep : ""} ${gi === 0 && ci === 0 ? "sticky left-0 z-20 bg-surface" : ""}`}
                 >
                   {c}
                 </th>
@@ -89,10 +90,13 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
             const leaseFlag = isLeaseFlagged(t);
             const amber = "bg-amber-50";
             return (
-              <tr key={t.id} className="border-b border-border last:border-b-0 hover:bg-background/60">
+              <tr key={t.id} className="border-b border-line last:border-b-0 hover:bg-fill/60">
                 {/* Target */}
-                <td className={`${td} sticky left-0 z-10 bg-white border-r border-border`}>
-                  <TextInput variant="cell" className="w-40 font-medium" value={t.name} placeholder="Target name" aria-label="Name" onCommit={(name) => update(t.id, { name })} />
+                <td className={`${td} sticky left-0 z-10 bg-surface pl-2`}>
+                  <div className="flex items-center gap-2">
+                    <TextInput variant="cell" className="w-40 font-medium" value={t.name} placeholder="Target name" aria-label="Name" onCommit={(name) => update(t.id, { name })} />
+                    <CuisineTag cuisine={t.cuisine} />
+                  </div>
                 </td>
                 <td className={td}>
                   <SelectInput variant="cell" className="w-36" value={t.type} options={TARGET_TYPES} labels={TARGET_TYPE_LABELS} aria-label="Type" onChange={(type) => update(t.id, { type })} />
@@ -106,7 +110,7 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
                 <td className={td}>
                   <ListInput variant="cell" className="w-44" value={t.zones} aria-label="Zones" onCommit={(zones) => update(t.id, { zones })} />
                 </td>
-                <td className={`${td} border-r border-border`}>
+                <td className={`${td} border-r border-line`}>
                   <SelectInput variant="cell" className="w-36" value={t.locationType} options={LOCATION_TYPES} labels={LOCATION_TYPE_LABELS} allowEmpty aria-label="Location type" onChange={(locationType) => update(t.id, { locationType })} />
                 </td>
 
@@ -123,7 +127,7 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
                 <td className={td}>
                   <NumberInput variant="cell" className="w-16" value={t.ebitdaMarginPct} allowEmpty aria-label="EBITDA margin %" onCommit={(ebitdaMarginPct) => update(t.id, { ebitdaMarginPct })} />
                 </td>
-                <td className={`${td} border-r border-border`}>
+                <td className={`${td} border-r border-line`}>
                   <NumberInput variant="cell" className="w-24" value={t.overheadCost} min={0} allowEmpty thousands aria-label="Overhead cost" onCommit={(overheadCost) => update(t.id, { overheadCost })} />
                 </td>
 
@@ -131,7 +135,7 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
                 <td className={td}>
                   <NumberInput variant="cell" className="w-14" value={t.foodCostPct} min={0} max={100} allowEmpty aria-label="Food cost %" onCommit={(foodCostPct) => update(t.id, { foodCostPct })} />
                 </td>
-                <td className={`${td} border-r border-border`}>
+                <td className={`${td} border-r border-line`}>
                   <NumberInput variant="cell" className="w-14" value={t.labourCostPct} min={0} max={100} allowEmpty aria-label="Labour cost %" onCommit={(labourCostPct) => update(t.id, { labourCostPct })} />
                 </td>
 
@@ -142,20 +146,20 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
                 <td className={`${td} ${leaseFlag ? amber : ""}`} title={leaseFlag ? flags.find((f) => f.code === "short_lease")?.reason : undefined}>
                   <NumberInput variant="cell" className={`w-14 ${leaseFlag ? "text-amber-800 font-medium" : ""}`} value={t.leaseYearsRemaining} min={0} allowEmpty aria-label="Lease years remaining" onCommit={(leaseYearsRemaining) => update(t.id, { leaseYearsRemaining })} />
                 </td>
-                <td className={`${td} border-r border-border text-center`}>
-                  <input type="checkbox" className="accent-navy" checked={t.hasBreakClause} aria-label="Has break clause" onChange={(e) => update(t.id, { hasBreakClause: e.target.checked })} />
+                <td className={`${td} border-r border-line text-center`}>
+                  <input type="checkbox" className="accent-foreground" checked={t.hasBreakClause} aria-label="Has break clause" onChange={(e) => update(t.id, { hasBreakClause: e.target.checked })} />
                 </td>
 
                 {/* Channel mix */}
                 {(["dineIn", "delivery", "takeaway"] as const).map((k, i) => (
-                  <td key={k} className={`${td} ${i === 2 ? "border-r border-border" : ""}`}>
+                  <td key={k} className={`${td} ${i === 2 ? "border-r border-line" : ""}`}>
                     <NumberInput variant="cell" className="w-14" value={t.channelMix?.[k]} min={0} max={100} allowEmpty aria-label={`${k} %`} onCommit={(v) => setMix(t, k, v)} />
                   </td>
                 ))}
 
                 {/* Aggregators */}
                 {(["uber", "deliveroo", "justEat"] as const).map((k, i) => (
-                  <td key={k} className={`${td} ${i === 2 ? "border-r border-border" : ""}`}>
+                  <td key={k} className={`${td} ${i === 2 ? "border-r border-line" : ""}`}>
                     <NumberInput variant="cell" className="w-14" value={t.aggregatorSplit?.[k]} min={0} max={100} allowEmpty aria-label={`${k} %`} onCommit={(v) => setAgg(t, k, v)} />
                   </td>
                 ))}
@@ -173,7 +177,7 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
                 <td className={td}>
                   <NumberInput variant="cell" className="w-14" value={t.covers} min={0} integer allowEmpty aria-label="Covers" onCommit={(covers) => update(t.id, { covers })} />
                 </td>
-                <td className={`${td} border-r border-border`}>
+                <td className={`${td} border-r border-line`}>
                   <NumberInput variant="cell" className="w-12" value={t.brandScore} min={1} max={5} integer allowEmpty aria-label="Brand score (judgement input)" onCommit={(brandScore) => update(t.id, { brandScore })} />
                 </td>
 
@@ -184,7 +188,7 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
                 <td className={td}>
                   <NumberInput variant="cell" className="w-14" value={t.integrationLoad} min={0} max={10} aria-label="Integration load" onCommit={(v) => update(t.id, { integrationLoad: v ?? t.integrationLoad })} />
                 </td>
-                <td className={`${td} border-r border-border`}>
+                <td className={`${td} border-r border-line`}>
                   <TextInput variant="cell" className="w-64" value={t.notes} aria-label="Notes" onCommit={(notes) => update(t.id, { notes })} />
                 </td>
 
@@ -205,7 +209,7 @@ export function TargetsTable({ targets }: { targets: Target[] }) {
                   )}
                 </td>
                 <td className={`${td} pr-2`}>
-                  <button type="button" onClick={() => remove(t)} className="rounded px-2 py-1 text-xs text-muted hover:bg-red-50 hover:text-red-700" aria-label={`Remove ${t.name || "target"}`}>
+                  <button type="button" onClick={() => remove(t)} className="rounded-full px-2.5 py-1 text-xs text-muted hover:bg-fill hover:text-foreground" aria-label={`Remove ${t.name || "target"}`}>
                     Remove
                   </button>
                 </td>

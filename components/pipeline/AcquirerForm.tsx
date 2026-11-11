@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, Field, ListInput, NumberInput, Segmented, TextInput } from "@/components/ui/inputs";
+import { acquirerHeadline } from "@/lib/headline";
 import { pipelineStore } from "@/lib/pipelineStore";
 import type { AcquirerProfile } from "@/lib/types";
 
@@ -10,7 +11,8 @@ export function AcquirerForm({ acquirer }: { acquirer: AcquirerProfile }) {
 
   return (
     <Card
-      title="Acquirer profile"
+      label="Acquirer"
+      title={acquirerHeadline(acquirer)}
       actions={
         <>
           <Segmented
@@ -34,7 +36,7 @@ export function AcquirerForm({ acquirer }: { acquirer: AcquirerProfile }) {
         </>
       }
     >
-      <div className="grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-4 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-4 lg:grid-cols-6">
         <div className="col-span-2">
           <Field label="Name" htmlFor="acq-name">
             <TextInput id="acq-name" value={acquirer.name} onCommit={(name) => set({ name })} />

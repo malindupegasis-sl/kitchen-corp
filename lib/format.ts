@@ -7,11 +7,14 @@ export function formatGbp(amount: number): string {
   }).format(amount);
 }
 
-/** Compact GBP, e.g. 18000000 -> "£18.0m", 900000 -> "£900k", 450 -> "£450". */
+/** Compact GBP, e.g. 18000000 -> "£18m", 52300000 -> "£52.3m", 900000 -> "£900k", 450 -> "£450". */
 export function formatGbpCompact(amount: number): string {
   const abs = Math.abs(amount);
   const sign = amount < 0 ? "-" : "";
-  if (abs >= 1_000_000) return `${sign}£${(abs / 1_000_000).toFixed(1)}m`;
+  if (abs >= 1_000_000) {
+    const m = abs / 1_000_000;
+    return `${sign}£${Number.isInteger(Math.round(m * 10) / 10) ? Math.round(m) : m.toFixed(1)}m`;
+  }
   if (abs >= 1_000) return `${sign}£${Math.round(abs / 1_000)}k`;
   return `${sign}£${Math.round(abs)}`;
 }

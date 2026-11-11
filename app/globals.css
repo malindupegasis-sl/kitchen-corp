@@ -1,23 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f5f2; /* off-white */
-  --foreground: #1a1d23;
-  --header: #0f172a; /* dark header */
-  --navy: #1e3a8a; /* single accent */
-  --muted: #6b7280;
-  --border: #e4e2dc;
+  --background: #f7f7f5; /* off-white page */
+  --surface: #ffffff; /* cards */
+  --foreground: #111111; /* near-black */
+  --muted: #6e6e73;
+  --line: rgba(0, 0, 0, 0.08); /* hairline */
+  --fill: rgba(0, 0, 0, 0.04); /* quiet input / hover fill */
+  --accent: #1a4bd8; /* the one deep-blue accent: links, focus, chart lines */
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
-  --color-header: var(--header);
-  --color-navy: var(--navy);
   --color-muted: var(--muted);
-  --color-border: var(--border);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-line: var(--line);
+  --color-fill: var(--fill);
+  --color-accent: var(--accent);
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html,
@@ -28,12 +31,29 @@ body {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Numbers always in a monospace, tabular font */
-.num {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
+@layer base {
+  /* Links take the one accent colour unless a utility says otherwise */
+  a {
+    color: var(--accent);
+  }
+}
+
+@layer components {
+  /* Numbers always in a monospace, tabular font */
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Serif display headings */
+  .display {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    font-weight: 500;
+  }
 }
