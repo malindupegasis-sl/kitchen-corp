@@ -31,8 +31,12 @@ export interface OptimiseResult {
   effectTotal: number;
   capitalUsed: number;
   totalLoad: number;
-  /** Buying schedule by year (ids), first-fit decreasing by load. */
+  /** Buying schedule: deal ids by the year their integration starts. */
   schedule: string[][];
+  /** Integration load landing in each year; never above the annual capacity. */
+  yearLoads: number[];
+  /** How each selected deal's load is spread across years. */
+  loadAllocations: LoadAllocation[];
   effects: Record<string, CombinationEffect>;
   /** Ids eligible for selection. */
   candidates: string[];
@@ -48,25 +52,79 @@ export function standaloneValue(t: Target, score: TargetScore | undefined, b: ty
   return (ebitdaEstimate(t, b).value * score.score) / 100;
 }
 
-/**
- * Integration capacity is throughput: `capacityPerYear` units of load are
- * absorbed each year, and a large deal can span more than one year. Deals are
- * taken in the order given; each starts in the year its cumulative load
- * reaches. Returns ids by start year, or null if the total load exceeds the
- * horizon's capacity.
- */
-export function scheduleByYear(items: readonly { id: string; load: number }[], capacityPerYear: number, years: number): string[][] | null {
-  const total = items.reduce((s, it) => s + it.load, 0);
-  if (capacityPerYear <= 0) return items.length === 0 ? Array.from({ length: years }, () => []) : null;
-  if (total > capacityPerYear * years + 1e-9) return null;
-  const bins: string[][] = Array.from({ length: years }, () => []);
-  let cumulative = 0;
-  for (const it of items) {
-    const year = Math.min(years - 1, Math.floor(cumulative / capacityPerYear + 1e-9));
-    bins[year].push(it.id);
-    cumulative += it.load;
+/** One slice of a deal's integration load landing in one year (0-based). */
+export interface LoadAllocation {
+  id: string;
+  year: number;
+  load: number;
+}
+
+export interface LoadPlan {
+  /** Deal ids by the year their integration starts. */
+  byStartYear: string[][];
+  /** How each deal's load is spread across years. */
+  allocations: LoadAllocation[];
+  /** Total integration load landing in each year. */
+  yearLoads: number[];
+}
+
+const EPS = 1e-9;
+
+/** Total load per year from a set of allocations. */
+export function yearLoadsOf(allocations: readonly LoadAllocation[], years: number): number[] {
+  const loads = Array.from({ length: years }, () => 0);
+  for (const a of allocations) {
+    if (a.year < 0 || a.year >= years) return Array.from({ length: years }, () => Infinity);
+    loads[a.year] += a.load;
   }
-  return bins;
+  return loads;
+}
+
+/** True when no single year takes more than the annual capacity. */
+export function isWithinAnnualCapacity(allocations: readonly LoadAllocation[], capacityPerYear: number, years: number): boolean {
+  return yearLoadsOf(allocations, years).every((l) => l <= capacityPerYear + EPS);
+}
+
+/**
+ * Spreads integration load across years so that no single year exceeds the
+ * annual capacity. Deals are taken in the order given; each fills the rest of
+ * the current year and carries over into the next, so a load-3 deal with a
+ * capacity of 2 takes 2 units in its first year and 1 in the next. Returns
+ * null when the deals cannot be absorbed within the horizon.
+ */
+export function planIntegrationLoad(items: readonly { id: string; load: number }[], capacityPerYear: number, years: number): LoadPlan | null {
+  const byStartYear: string[][] = Array.from({ length: years }, () => []);
+  const allocations: LoadAllocation[] = [];
+  const remaining = Array.from({ length: years }, () => Math.max(0, capacityPerYear));
+  let year = 0;
+  for (const it of items) {
+    let left = it.load;
+    while (year < years && remaining[year] <= EPS) year++;
+    if (left <= EPS) {
+      byStartYear[Math.min(year, years - 1)].push(it.id);
+      continue;
+    }
+    if (year >= years) return null;
+    byStartYear[year].push(it.id);
+    while (left > EPS) {
+      if (year >= years) return null;
+      const take = Math.min(left, remaining[year]);
+      if (take > EPS) {
+        allocations.push({ id: it.id, year, load: take });
+        remaining[year] -= take;
+        left -= take;
+      }
+      if (remaining[year] <= EPS) year++;
+    }
+  }
+  const yearLoads = yearLoadsOf(allocations, years);
+  if (!isWithinAnnualCapacity(allocations, capacityPerYear, years)) return null;
+  return { byStartYear, allocations, yearLoads };
+}
+
+/** Deal ids by start year, or null if the load cannot be absorbed within the horizon. */
+export function scheduleByYear(items: readonly { id: string; load: number }[], capacityPerYear: number, years: number): string[][] | null {
+  return planIntegrationLoad(items, capacityPerYear, years)?.byStartYear ?? null;
 }
 
 interface Evaluated {
@@ -102,16 +160,17 @@ export function optimise(input: OptimiseInput, b: typeof B = B): OptimiseResult 
   const capital = acquirer.capital;
   const loadCap = acquirer.integrationCapacityPerYear * years;
 
-  const fits = (basket: Target[]): boolean => {
-    const price = basket.reduce((s, t) => s + t.askingPrice, 0);
-    const load = basket.reduce((s, t) => s + t.integrationLoad, 0);
-    return price <= capital + 1e-9 && load <= loadCap + 1e-9;
-  };
   /** Order for scheduling: biggest standalone value first (Phase 4 refines this). */
   const scheduleOrder = (basket: Target[]) =>
     [...basket]
       .sort((x, y) => standaloneValue(y, scoreById.get(y.id), b) - standaloneValue(x, scoreById.get(x.id), b))
       .map((t) => ({ id: t.id, load: t.integrationLoad }));
+  /** Within budget, and the load can be spread so no single year exceeds the annual capacity. */
+  const fits = (basket: Target[]): boolean => {
+    const price = basket.reduce((s, t) => s + t.askingPrice, 0);
+    if (price > capital + 1e-9) return false;
+    return planIntegrationLoad(scheduleOrder(basket), acquirer.integrationCapacityPerYear, years) !== null;
+  };
 
   let best: Target[] = forced;
   let bestEval: Evaluated | null = fits(forced) ? evaluateBasket(forced, acquirer, scoreById, b) : null;
@@ -138,6 +197,7 @@ export function optimise(input: OptimiseInput, b: typeof B = B): OptimiseResult 
       if (i === free.length) {
         if (chosen.length === 0) return; // the forced-only basket is already evaluated
         const basket = [...forced, ...chosen];
+        if (planIntegrationLoad(scheduleOrder(basket), acquirer.integrationCapacityPerYear, years) === null) return;
         evaluated++;
         const ev = evaluateBasket(basket, acquirer, scoreById, b);
         if (better(basket, ev)) {
@@ -191,7 +251,8 @@ export function optimise(input: OptimiseInput, b: typeof B = B): OptimiseResult 
 
   const finalEval: Evaluated = bestEval ?? { value: 0, standalone: 0, effectTotal: 0, effects: new Map() };
   const selected = best.map((t) => t.id);
-  const schedule = scheduleByYear(scheduleOrder(best), acquirer.integrationCapacityPerYear, years) ?? [];
+  const plan = planIntegrationLoad(scheduleOrder(best), acquirer.integrationCapacityPerYear, years);
+  const schedule = plan?.byStartYear ?? Array.from({ length: years }, () => []);
   return {
     selected,
     value: finalEval.value,
@@ -200,6 +261,8 @@ export function optimise(input: OptimiseInput, b: typeof B = B): OptimiseResult 
     capitalUsed: best.reduce((s, t) => s + t.askingPrice, 0),
     totalLoad: best.reduce((s, t) => s + t.integrationLoad, 0),
     schedule,
+    yearLoads: plan?.yearLoads ?? Array.from({ length: years }, () => 0),
+    loadAllocations: plan?.allocations ?? [],
     effects: Object.fromEntries(finalEval.effects),
     candidates: candidates.map((t) => t.id),
     method,

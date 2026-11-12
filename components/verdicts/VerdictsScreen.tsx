@@ -71,7 +71,7 @@ export function VerdictsScreen() {
       <Exhibit
         number={1}
         title={verdictsExhibitTitle(vr)}
-        note={`PURSUE is the set that maximises standalone value plus combination effects within ${"£"}${Math.round(acquirer.capital / 1e6)}m and an integration capacity of ${acquirer.integrationCapacityPerYear} a year over 3 years. HOLD scores ${vr.passBelow} or more but is left out: the card says whether by budget, capacity or overlap, and what would flip it. PASS scores below ${vr.passBelow}.`}
+        note={`PURSUE is the set that maximises standalone value plus combination effects within ${"£"}${Math.round(acquirer.capital / 1e6)}m and an integration capacity of ${acquirer.integrationCapacityPerYear} a year over 3 years. HOLD scores ${vr.passBelow} or more but is left out: the card says whether by budget, capacity or overlap, and what would flip it. PASS scores below ${vr.passBelow}. Integration load is spread so no single year takes more than ${acquirer.integrationCapacityPerYear} units: a load-3 group deal runs over two years (${vr.result.yearLoads.map((l, i) => `Year ${i + 1}: ${Math.round(l * 10) / 10}`).join(", ")}).`}
         actions={
           <Segmented
             aria-label="Filter verdicts"
