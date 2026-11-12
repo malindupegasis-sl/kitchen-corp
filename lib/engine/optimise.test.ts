@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sampleAcquirer, sampleTargets } from "@/data/sample";
 import { acquisitionLens, scoreTargets } from "./index";
-import { evaluateBasket, optimise, scheduleByYear } from "./optimise";
+import { evaluateBasket, isWithinAnnualCapacity, optimise, planIntegrationLoad, scheduleByYear } from "./optimise";
 import type { AcquirerProfile, Target } from "@/lib/types";
 
 const byId = (id: string) => sampleTargets.find((t) => t.id === id)!;
@@ -16,6 +16,63 @@ describe("scheduleByYear", () => {
     expect(scheduleByYear([{ id: "a", load: 3 }, { id: "b", load: 3 }, { id: "c", load: 1 }], 2, 3)).toBeNull();
     expect(scheduleByYear([{ id: "a", load: 2 }, { id: "b", load: 2 }, { id: "c", load: 2 }], 2, 3)).toEqual([["a"], ["b"], ["c"]]);
     expect(scheduleByYear([], 2, 3)).toEqual([[], [], []]);
+  });
+});
+
+describe("annual integration capacity", () => {
+  it("(a) rejects a plan that front-loads more than the annual capacity into Year 1", () => {
+    // Two group deals both landing in Year 1: 6 units against a capacity of 2.
+    const frontLoaded = [
+      { id: "a", year: 0, load: 3 },
+      { id: "b", year: 0, load: 3 },
+    ];
+    expect(isWithinAnnualCapacity(frontLoaded, 2, 3)).toBe(false);
+    // Even a single deal: 3 units in Year 1 breaks a capacity of 2.
+    expect(isWithinAnnualCapacity([{ id: "a", year: 0, load: 3 }], 2, 3)).toBe(false);
+    // The same 6 units spread 2-2-2 is fine.
+    expect(isWithinAnnualCapacity([{ id: "a", year: 0, load: 2 }, { id: "a", year: 1, load: 1 }, { id: "b", year: 1, load: 1 }, { id: "b", year: 2, load: 2 }], 2, 3)).toBe(true);
+  });
+
+  it("(b) a load-3 group deal is feasible: 2 units in Year 1, 1 in Year 2", () => {
+    const plan = planIntegrationLoad([{ id: "group", load: 3 }], 2, 3)!;
+    expect(plan).not.toBeNull();
+    expect(plan.allocations).toEqual([
+      { id: "group", year: 0, load: 2 },
+      { id: "group", year: 1, load: 1 },
+    ]);
+    expect(plan.yearLoads).toEqual([2, 1, 0]);
+    expect(plan.byStartYear).toEqual([["group"], [], []]);
+  });
+
+  it("spreads several deals without any year going over, and refuses what will not fit", () => {
+    const plan = planIntegrationLoad([{ id: "a", load: 3 }, { id: "b", load: 1 }, { id: "c", load: 2 }], 2, 3)!;
+    expect(plan.yearLoads).toEqual([2, 2, 2]);
+    expect(plan.byStartYear).toEqual([["a"], ["b"], ["c"]]);
+    expect(planIntegrationLoad([{ id: "a", load: 3 }, { id: "b", load: 3 }, { id: "c", load: 1 }], 2, 3)).toBeNull();
+    expect(planIntegrationLoad([{ id: "a", load: 1 }], 0, 3)).toBeNull();
+  });
+
+  it("the optimiser never puts more than the annual capacity into any year", () => {
+    for (const cap of [1, 2, 3, 4]) {
+      for (const strategy of ["expand", "densify"] as const) {
+        const r = run({ ...sampleAcquirer, strategy, capital: 60_000_000, integrationCapacityPerYear: cap });
+        expect(r.yearLoads).toHaveLength(3);
+        for (const l of r.yearLoads) expect(l).toBeLessThanOrEqual(cap + 1e-9);
+        expect(isWithinAnnualCapacity(r.loadAllocations, cap, 3)).toBe(true);
+        expect(r.yearLoads.reduce((a, b) => a + b, 0)).toBeCloseTo(r.totalLoad, 9);
+      }
+    }
+  });
+
+  it("the sample densify set spreads Smashed MCR's load-3 deal across two years", () => {
+    const r = run({ ...sampleAcquirer, strategy: "densify" });
+    expect(r.selected).toContain("t_smashed");
+    const smashed = r.loadAllocations.filter((a) => a.id === "t_smashed");
+    expect(smashed).toEqual([
+      { id: "t_smashed", year: 0, load: 2 },
+      { id: "t_smashed", year: 1, load: 1 },
+    ]);
+    expect(Math.max(...r.yearLoads)).toBeLessThanOrEqual(2);
   });
 });
 
